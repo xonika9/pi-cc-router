@@ -1,6 +1,6 @@
 {
   "name": "pi-claude-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Pi coding agent extension that routes LLM calls through the Claude Code CLI",
   "main": "index.ts",
   "keywords": [
