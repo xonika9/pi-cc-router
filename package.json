@@ -1,6 +1,6 @@
 {
   "name": "pi-cc-router",
-  "version": "0.3.1",
+  "version": "0.1.0",
   "description": "Pi coding agent extension that routes LLM calls through Claude Code CLI",
   "main": "index.ts",
   "keywords": [
