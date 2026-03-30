@@ -5,7 +5,8 @@
  * control_response messages to stdin.
  *
  * - Custom MCP tools (mcp__custom-tools__*): DENIED — pi executes these
- * - Everything else (user MCP tools, internal tools): ALLOWED — Claude handles
+ * - Internal Claude Code tools (Agent, ToolSearch, Task, etc.): DENIED — pi cannot execute these
+ * - Everything else (user MCP tools and other unknown tools): ALLOWED — Claude handles
  */
 
 import type { ClaudeControlRequest } from "./types";
@@ -36,7 +37,8 @@ interface ControlResponse {
  * Handle a control_request from the Claude CLI.
  *
  * Denies custom MCP tools (mcp__custom-tools__*) so pi can execute them.
- * Allows everything else (user MCP tools, internal Claude tools).
+ * Denies internal Claude Code tools that pi cannot execute.
+ * Allows user MCP tools and other unknown tools.
  *
  * @returns true if the tool was allowed, false if denied
  */
