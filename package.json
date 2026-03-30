@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "Pi coding agent extension that routes LLM calls through Claude Code CLI",
   "main": "index.ts",
+  "files": [
+    "index.ts",
+    "src/"
+  ],
   "keywords": [
     "pi-package"
   ],
