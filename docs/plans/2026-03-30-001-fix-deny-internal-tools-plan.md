@@ -3,7 +3,7 @@ title: "fix: Deny Claude internal tools to prevent CLI hanging"
 type: fix
 status: completed
 date: 2026-03-30
-origin: .planning/debug/cli-hanging-internal-tools.md
+origin: planning/debug/cli-hanging-internal-tools.md
 ---
 
 # fix: Deny Claude internal tools to prevent CLI hanging
