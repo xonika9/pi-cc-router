@@ -1319,7 +1319,7 @@ describe("streamViaCli", () => {
       await vi.advanceTimersByTimeAsync(100);
     });
 
-    it("resets timer on each stdout line", async () => {
+    it("resets timer on each top-level stdout line", async () => {
       const model = mockModels[0] as any;
       const context = {
         messages: [{ role: "user", content: "Hello" }],
@@ -1364,6 +1364,45 @@ describe("streamViaCli", () => {
       expect(doneEvent2.message.content).toBeDefined();
 
       // Clean up
+      proc.stdout.end();
+      await vi.advanceTimersByTimeAsync(100);
+    });
+
+    it("does not reset timer on sub-agent stream events", async () => {
+      const model = mockModels[0] as any;
+      const context = {
+        messages: [{ role: "user", content: "Hello" }],
+      };
+
+      streamViaCli(model, context);
+      await vi.advanceTimersByTimeAsync(0);
+
+      const proc = (spawn as any).mock.results[0].value;
+
+      await vi.advanceTimersByTimeAsync(170_000);
+
+      proc.stdout.write(
+        JSON.stringify({
+          type: "stream_event",
+          event: {
+            type: "message_start",
+            message: { usage: { input_tokens: 10, output_tokens: 0 } },
+          },
+          parent_tool_use_id: "agent_1",
+        }) + "\n",
+      );
+      await vi.advanceTimersByTimeAsync(0);
+
+      await vi.advanceTimersByTimeAsync(10_000);
+
+      const mockStream = MockAssistantMessageEventStream.mock.instances[0];
+      const doneEvent = mockStream._events.find(
+        (e: any) => e.type === "done" && e.message,
+      );
+      expect(doneEvent).toBeDefined();
+      expect(doneEvent.message.content).toBeDefined();
+      expect(proc.kill).toHaveBeenCalledWith("SIGKILL");
+
       proc.stdout.end();
       await vi.advanceTimersByTimeAsync(100);
     });

@@ -148,7 +148,7 @@ CLI зависает на ~180с когда Claude использует internal
 
 ---
 
-- [ ] **Unit 3: Defense-in-depth — таймер только для top-level событий в provider.ts**
+- [x] **Unit 3: Defense-in-depth — таймер только для top-level событий в provider.ts**
 
 **Goal:** Таймер бездействия не сбрасывается суб-агентными событиями
 
@@ -171,13 +171,15 @@ CLI зависает на ~180с когда Claude использует internal
 
 **Test scenarios:**
 
-- Нет новых unit-тестов — это defense-in-depth изменение поведения таймера в рамках существующей логики. Существующие тесты таймера бездействия покрывают top-level flow. Ручная верификация через end-to-end тест
+- Happy path: top-level stream_event по-прежнему сбрасывает таймер
+- Edge case: sub-agent stream_event (`parent_tool_use_id != null`) НЕ сбрасывает таймер и процесс завершается по inactivity timeout
+- Integration: `tests/provider.test.ts` покрывает top-level и sub-agent flow без изменений public API
 
 **Verification:**
 
-- `npm run build` компилируется без ошибок
-- `npm test` — все существующие тесты проходят
-- Логика: суб-агентные события (parent_tool_use_id != null) НЕ сбрасывают таймер
+- `npm run typecheck` проходит (`package.json` не содержит `build`, поэтому compile-equivalent проверка в этом репозитории — `tsc --noEmit`)
+- `npm test -- tests/provider.test.ts` проходит
+- Логика: суб-агентные события (`parent_tool_use_id != null`) НЕ сбрасывают таймер
 
 ## System-Wide Impact
 
