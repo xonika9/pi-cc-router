@@ -190,7 +190,7 @@ describe("writeMcpConfig", () => {
 
     // First writeFileSync call is the schema file
     const schemaCall = mocks.writeFileSync.mock.calls[0];
-    expect(schemaCall[0]).toMatch(/pi-claude-mcp-schemas/);
+    expect(schemaCall[0]).toMatch(/pi-cc-router-mcp-schemas/);
     expect(JSON.parse(schemaCall[1])).toEqual(toolDefs);
   });
 
@@ -252,7 +252,7 @@ describe("writeMcpConfig", () => {
       "mcp-schema-server.cjs",
     );
     // Second arg should be the schema file path
-    expect(server.args[1]).toMatch(/pi-claude-mcp-schemas/);
+    expect(server.args[1]).toMatch(/pi-cc-router-mcp-schemas/);
   });
 
   it("returns the config file path", () => {
@@ -266,7 +266,7 @@ describe("writeMcpConfig", () => {
 
     const result = writeMcpConfig(toolDefs);
 
-    expect(result).toMatch(/pi-claude-mcp-config/);
+    expect(result).toMatch(/pi-cc-router-mcp-config/);
     expect(result).toMatch(/\.json$/);
   });
 });
