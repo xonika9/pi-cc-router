@@ -1,16 +1,6 @@
 # pi-cc-router
 
-A [pi](https://github.com/mariozechner/pi-coding-agent) extension that routes LLM calls through the [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) as a subprocess. Use your Claude Pro/Max subscription as the LLM backend — no API key, no separate billing.
-
-## How it works
-
-The extension registers as a custom pi provider exposing all Claude models. Each request spawns a `claude -p` subprocess using the stream-json wire protocol, with `--resume` on follow-up turns to reuse the CLI's session state instead of replaying full history. Claude proposes tool calls, pi executes them natively. Custom pi tools are exposed to Claude via a schema-only MCP server.
-
-## Requirements
-
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated (`claude` on PATH)
-- A Claude Pro or Max subscription
-- [pi](https://github.com/mariozechner/pi-coding-agent)
+Route [pi](https://github.com/mariozechner/pi-coding-agent) LLM calls through the [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code). Use your Claude Pro/Max subscription as the backend — no API key required.
 
 ## Installation
 
@@ -18,25 +8,21 @@ The extension registers as a custom pi provider exposing all Claude models. Each
 pi install npm:pi-cc-router
 ```
 
-Or add manually to `~/.pi/agent/settings.json`:
+Select a Claude model via `/model`. All Claude models appear under the `pi-cc-router` provider.
 
-```json
-{
-  "packages": ["npm:pi-cc-router"]
-}
-```
+## Requirements
 
-Then select a Claude model via `/model` in the interactive UI. All Claude models appear under the `pi-cc-router` provider.
+- Claude Code CLI installed and authenticated (`claude` on PATH)
+- Claude Pro or Max subscription
 
-## Features
+## How it works
+
+Each request spawns a `claude -p` subprocess using the stream-json protocol. Claude proposes tool calls — pi executes them natively. Custom pi tools are exposed to Claude via a schema-only MCP server.
 
 - Streams text, thinking, and tool call tokens in real-time
 - Maps tool names and arguments bidirectionally between Claude and pi
-- Exposes custom pi tools to Claude via MCP (schema-only, no execution)
-- Break-early pattern prevents Claude CLI from auto-executing tools
 - Configurable thinking effort with elevated budgets for Opus models
-- Cross-platform subprocess management (Windows, macOS, Linux)
-- Inactivity timeout and process registry for cleanup
+- Cross-platform: Windows, macOS, Linux
 
 ## License
 
