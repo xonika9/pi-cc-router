@@ -14,7 +14,11 @@ The extension registers as a custom pi provider exposing all Claude models. Each
 
 ## Installation
 
-Add to `~/.pi/agent/settings.json`:
+```
+pi install npm:pi-cc-router
+```
+
+Or add manually to `~/.pi/agent/settings.json`:
 
 ```json
 {
