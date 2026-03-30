@@ -1001,6 +1001,96 @@ describe("buildResumePrompt", () => {
     expect(result).toContain("Compare them");
   });
 
+  it("tool continuation: sends only latest tool result without repeating user message", () => {
+    const context = {
+      messages: [
+        { role: "user", content: "Check server status" },
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "toolCall",
+              name: "bash",
+              arguments: { command: "ssh server uptime" },
+            },
+          ],
+        },
+        { role: "toolResult", toolName: "bash", content: "up 30 days" },
+      ],
+    };
+
+    const result = buildResumePrompt(context) as string;
+    expect(result).toContain("TOOL RESULT");
+    expect(result).toContain("up 30 days");
+    expect(result).toContain("Continue with your planned actions");
+    expect(result).not.toContain("Check server status");
+  });
+
+  it("tool continuation: sends only latest batch, not accumulated results", () => {
+    const context = {
+      messages: [
+        { role: "user", content: "Analyze files" },
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "toolCall",
+              name: "read",
+              arguments: { path: "/a.ts" },
+            },
+          ],
+        },
+        { role: "toolResult", toolName: "read", content: "old content" },
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "toolCall",
+              name: "read",
+              arguments: { path: "/b.ts" },
+            },
+          ],
+        },
+        { role: "toolResult", toolName: "read", content: "new content" },
+      ],
+    };
+
+    const result = buildResumePrompt(context) as string;
+    expect(result).toContain("new content");
+    expect(result).not.toContain("old content");
+    expect(result).not.toContain("Analyze files");
+  });
+
+  it("tool continuation: sends all parallel tool results from latest assistant turn", () => {
+    const context = {
+      messages: [
+        { role: "user", content: "Read both files" },
+        {
+          role: "assistant",
+          content: [
+            {
+              type: "toolCall",
+              name: "read",
+              arguments: { path: "/a.ts" },
+            },
+            {
+              type: "toolCall",
+              name: "read",
+              arguments: { path: "/b.ts" },
+            },
+          ],
+        },
+        { role: "toolResult", toolName: "read", content: "content A" },
+        { role: "toolResult", toolName: "read", content: "content B" },
+      ],
+    };
+
+    const result = buildResumePrompt(context) as string;
+    expect(result).toContain("content A");
+    expect(result).toContain("content B");
+    expect(result).not.toContain("Read both files");
+  });
+
   it("handles custom tool results with plain name format", () => {
     const context = {
       messages: [
@@ -1042,6 +1132,29 @@ describe("buildResumePrompt", () => {
     expect(buildResumePrompt(context)).toBe("Hello from blocks");
   });
 
+  it("logs a warning and falls back when a non-tool message appears after the final user", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const context = {
+      messages: [
+        { role: "user", content: "Hello" },
+        { role: "assistant", content: "Working" },
+        { role: "user", content: "Follow-up" },
+        { role: "system", content: "unexpected" },
+        { role: "toolResult", toolName: "read", content: "result" },
+      ],
+    };
+
+    const result = buildResumePrompt(context) as string;
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Unexpected message role after final user message",
+      ),
+    );
+    expect(result).toContain("Follow-up");
+    expect(result).toContain("result");
+  });
+
   it("handles images in the final user message by returning ContentBlock[]", () => {
     const context = {
       messages: [
@@ -1063,5 +1176,37 @@ describe("buildResumePrompt", () => {
     expect((result as any[]).length).toBe(2);
     expect((result as any[])[0].type).toBe("text");
     expect((result as any[])[1].type).toBe("image");
+  });
+
+  it("tool continuation with image: returns ContentBlock[] array", () => {
+    const context = {
+      messages: [
+        { role: "user", content: "Take screenshot" },
+        {
+          role: "assistant",
+          content: [{ type: "toolCall", name: "bash", arguments: {} }],
+        },
+        {
+          role: "toolResult",
+          toolName: "bash",
+          content: [
+            { type: "text", text: "Screenshot taken" },
+            { type: "image", data: "abc123", mimeType: "image/png" },
+          ],
+        },
+      ],
+    };
+
+    const result = buildResumePrompt(context);
+    expect(Array.isArray(result)).toBe(true);
+    const blocks = result as any[];
+    expect(blocks.some((block) => block.type === "image")).toBe(true);
+    expect(
+      blocks.some(
+        (block) =>
+          block.type === "text" &&
+          block.text.includes("Continue with your planned actions"),
+      ),
+    ).toBe(true);
   });
 });

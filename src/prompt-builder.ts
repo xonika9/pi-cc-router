@@ -153,6 +153,8 @@ function buildCustomToolResultPrompt(messages: any[]): string | null {
 export function buildResumePrompt(context: {
   messages: any[];
 }): string | AnthropicContentBlock[] {
+  placeholderImageCount = 0;
+
   const messages = context.messages;
   if (messages.length === 0) return "";
 
@@ -160,6 +162,36 @@ export function buildResumePrompt(context: {
   const finalUserIndex = findFinalUserMessageIndex(messages);
   if (finalUserIndex < 0) return "";
 
+  const trailingMessages = messages.slice(finalUserIndex + 1);
+  if (trailingMessages.length > 0) {
+    const hasUnexpectedRole = trailingMessages.some(
+      (message) =>
+        message.role !== "assistant" && message.role !== "toolResult",
+    );
+
+    if (hasUnexpectedRole) {
+      console.warn(
+        "[pi-cc-router] Unexpected message role after final user message in resume context; falling back to legacy resume prompt logic",
+      );
+      return buildLegacyResumePrompt(messages, finalUserIndex);
+    }
+
+    const hasToolResultsAfterUser = trailingMessages.some(
+      (message) => message.role === "toolResult",
+    );
+
+    if (hasToolResultsAfterUser) {
+      return buildToolContinuationPrompt(messages, finalUserIndex);
+    }
+  }
+
+  return buildLegacyResumePrompt(messages, finalUserIndex);
+}
+
+function buildLegacyResumePrompt(
+  messages: any[],
+  finalUserIndex: number,
+): string | AnthropicContentBlock[] {
   // Collect new messages: everything from the last assistant turn onwards
   // (tool results from the last assistant + the new user message)
   const newMessages: any[] = [];
@@ -209,6 +241,66 @@ export function buildResumePrompt(context: {
   }
 
   return parts.join("\n") || "";
+}
+
+function buildToolContinuationPrompt(
+  messages: any[],
+  finalUserIndex: number,
+): string | AnthropicContentBlock[] {
+  let lastAssistantIdx = -1;
+  for (let i = messages.length - 1; i > finalUserIndex; i--) {
+    if (messages[i].role === "assistant") {
+      lastAssistantIdx = i;
+      break;
+    }
+  }
+
+  const startFrom =
+    lastAssistantIdx >= 0 ? lastAssistantIdx + 1 : finalUserIndex + 1;
+  const parts: string[] = [];
+  const imageBlocks: AnthropicContentBlock[] = [];
+
+  for (let i = startFrom; i < messages.length; i++) {
+    const message = messages[i];
+    if (message.role !== "toolResult") continue;
+
+    if (message.toolName && isCustomToolName(message.toolName)) {
+      parts.push(`TOOL RESULT (${message.toolName}):`);
+    } else {
+      const claudeToolName = message.toolName
+        ? mapPiToolNameToClaude(message.toolName)
+        : "unknown";
+      parts.push(`TOOL RESULT (historical ${claudeToolName}):`);
+    }
+    parts.push(toolResultContentToText(message.content));
+
+    if (Array.isArray(message.content)) {
+      for (const block of message.content) {
+        if (block.type === "image") {
+          const translated = translateImageBlock(block);
+          if (translated) {
+            imageBlocks.push(translated);
+            placeholderImageCount--;
+          }
+        }
+      }
+    }
+  }
+
+  if (parts.length === 0) {
+    return buildLegacyResumePrompt(messages, finalUserIndex);
+  }
+
+  parts.push(
+    "",
+    "Continue with your planned actions based on the tool results above.",
+  );
+
+  if (imageBlocks.length > 0) {
+    return [{ type: "text", text: parts.join("\n") }, ...imageBlocks];
+  }
+
+  return parts.join("\n");
 }
 
 export function buildPrompt(context: {
