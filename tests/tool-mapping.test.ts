@@ -7,7 +7,24 @@ import {
   translateClaudeArgsToPi,
   translatePiArgsToClaude,
   isCustomToolName,
+  isClaudeInternalTool,
 } from "../src/tool-mapping";
+
+const ALL_INTERNAL_TOOLS = [
+  "Agent",
+  "ToolSearch",
+  "Task",
+  "TaskOutput",
+  "TodoWrite",
+  "NotebookEdit",
+  "ExitPlanMode",
+  "AskUserQuestion",
+  "Skill",
+  "WebFetch",
+  "WebSearch",
+  "RemoteTrigger",
+  "SendMessage",
+];
 
 describe("tool-mapping", () => {
   describe("TOOL_MAPPINGS", () => {
@@ -237,6 +254,28 @@ describe("tool-mapping", () => {
       expect(isCustomToolName("bash")).toBe(false);
       expect(isCustomToolName("grep")).toBe(false);
       expect(isCustomToolName("find")).toBe(false);
+    });
+  });
+
+  describe("isClaudeInternalTool", () => {
+    it("returns true for all known Claude internal tools", () => {
+      for (const toolName of ALL_INTERNAL_TOOLS) {
+        expect(isClaudeInternalTool(toolName)).toBe(true);
+      }
+    });
+
+    it("returns false for pi built-in tools", () => {
+      expect(isClaudeInternalTool("Read")).toBe(false);
+      expect(isClaudeInternalTool("Write")).toBe(false);
+      expect(isClaudeInternalTool("Grep")).toBe(false);
+    });
+
+    it("returns false for custom MCP tools", () => {
+      expect(isClaudeInternalTool("mcp__custom-tools__weather")).toBe(false);
+    });
+
+    it("returns false for unknown tools", () => {
+      expect(isClaudeInternalTool("SomeUnknownTool")).toBe(false);
     });
   });
 

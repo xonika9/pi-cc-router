@@ -23,7 +23,7 @@ function createMockModel() {
   return {
     id: "claude-sonnet-4-5-20250929",
     name: "Claude Sonnet 4.5",
-    api: "pi-claude-cli",
+    api: "pi-cc-router",
     provider: "anthropic",
     cost: { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 },
     contextWindow: 200000,
@@ -1114,7 +1114,7 @@ describe("createEventBridge", () => {
 
       expect(output.role).toBe("assistant");
       expect(output.content).toEqual([]);
-      expect(output.api).toBe("pi-claude-cli");
+      expect(output.api).toBe("pi-cc-router");
       expect(output.provider).toBe("anthropic");
       expect(output.model).toBe("claude-sonnet-4-5-20250929");
       expect(output.stopReason).toBe("stop");

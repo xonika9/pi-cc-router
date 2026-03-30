@@ -226,17 +226,19 @@ export function streamViaCli(
       rl.on("line", (line: string) => {
         if (broken) return; // Guard: ignore buffered lines after break-early
 
-        // Reset inactivity timer on each line of output
-        resetInactivityTimer();
-
         const msg = parseLine(line);
         if (!msg) return;
+
+        if (msg.type !== "stream_event") {
+          resetInactivityTimer();
+        }
 
         if (msg.type === "stream_event") {
           // Only forward top-level events to pi's event bridge.
           // Sub-agent events (parent_tool_use_id !== null) are internal to the CLI.
           const isTopLevel = !(msg as any).parent_tool_use_id;
           if (isTopLevel) {
+            resetInactivityTimer();
             bridge.handleEvent(msg.event);
           }
 

@@ -97,15 +97,12 @@ describe("spawnClaude", () => {
 
     expect(args).toContain("--append-system-prompt");
     const idx = args.indexOf("--append-system-prompt");
-    expect(args[idx + 1]).toContain("pi-claude-cli-sysprompt-");
+    expect(args[idx + 1]).toContain("pi-cc-router-sysprompt-");
   });
 
   it("temp file contains the system prompt text", () => {
     spawnClaude("claude-sonnet-4-5-20250929", "You are a helpful assistant.");
-    const tmpFile = join(
-      tmpdir(),
-      `pi-claude-cli-sysprompt-${process.pid}.txt`,
-    );
+    const tmpFile = join(tmpdir(), `pi-cc-router-sysprompt-${process.pid}.txt`);
     expect(existsSync(tmpFile)).toBe(true);
     expect(readFileSync(tmpFile, "utf-8")).toBe("You are a helpful assistant.");
   });
@@ -599,7 +596,7 @@ describe("resume session flag", () => {
 });
 
 describe("cleanupSystemPromptFile", () => {
-  const tmpFile = join(tmpdir(), `pi-claude-cli-sysprompt-${process.pid}.txt`);
+  const tmpFile = join(tmpdir(), `pi-cc-router-sysprompt-${process.pid}.txt`);
 
   it("deletes the temp file when it exists", () => {
     // Create the file by spawning with a system prompt

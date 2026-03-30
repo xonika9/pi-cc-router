@@ -63,7 +63,7 @@ export function writeMcpConfig(toolDefs: McpToolDef[]): string {
   // Write tool schemas to temp file
   const schemaFilePath = join(
     tmpdir(),
-    `pi-claude-mcp-schemas-${process.pid}.json`,
+    `pi-cc-router-mcp-schemas-${process.pid}.json`,
   );
   writeFileSync(schemaFilePath, JSON.stringify(toolDefs));
 
@@ -85,7 +85,7 @@ export function writeMcpConfig(toolDefs: McpToolDef[]): string {
   // Write config to temp file
   const configFilePath = join(
     tmpdir(),
-    `pi-claude-mcp-config-${process.pid}.json`,
+    `pi-cc-router-mcp-config-${process.pid}.json`,
   );
   writeFileSync(configFilePath, JSON.stringify(config));
 
