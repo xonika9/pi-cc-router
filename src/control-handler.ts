@@ -48,7 +48,7 @@ export function handleControlRequest(
 ): boolean {
   if (!msg.request_id || !msg.request) {
     console.error(
-      "[pi-claude-cli] Malformed control_request: missing request_id or request object",
+      "[pi-cc-router] Malformed control_request: missing request_id or request object",
       msg,
     );
     return false;

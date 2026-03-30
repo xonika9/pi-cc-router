@@ -3,3 +3,5 @@ dist/
 coverage/
 *.tsbuildinfo
 .claude/settings.local.json
+.idea/
+.pi/

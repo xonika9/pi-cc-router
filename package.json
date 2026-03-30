@@ -1,7 +1,7 @@
 {
-  "name": "pi-claude-cli",
+  "name": "pi-cc-router",
   "version": "0.3.1",
-  "description": "Pi coding agent extension that routes LLM calls through the Claude Code CLI",
+  "description": "Pi coding agent extension that routes LLM calls through Claude Code CLI",
   "main": "index.ts",
   "keywords": [
     "pi-package"
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rchern/pi-claude-cli"
+    "url": "https://github.com/xonika9/pi-cc-router"
   },
   "license": "MIT",
   "peerDependencies": {

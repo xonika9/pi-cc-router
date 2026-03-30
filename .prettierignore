@@ -4,4 +4,4 @@ dist/
 coverage/
 *.tsbuildinfo
 package-lock.json
-.planning/
+docs/

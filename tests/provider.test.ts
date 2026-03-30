@@ -73,7 +73,7 @@ import spawn from "cross-spawn";
 import { streamViaCli } from "../src/provider";
 
 describe("provider registration (default export)", () => {
-  it("registers provider with ID pi-claude-cli", async () => {
+  it("registers provider with ID pi-cc-router", async () => {
     const registerProvider = vi.fn();
     const mockPi = { registerProvider, on: vi.fn() } as any;
 
@@ -82,7 +82,7 @@ describe("provider registration (default export)", () => {
     mod.default(mockPi);
 
     expect(registerProvider).toHaveBeenCalledTimes(1);
-    expect(registerProvider.mock.calls[0][0]).toBe("pi-claude-cli");
+    expect(registerProvider.mock.calls[0][0]).toBe("pi-cc-router");
   });
 
   it("registers provider with correct config shape", async () => {
@@ -93,9 +93,9 @@ describe("provider registration (default export)", () => {
     mod.default(mockPi);
 
     const config = registerProvider.mock.calls[0][1];
-    expect(config.baseUrl).toBe("pi-claude-cli");
+    expect(config.baseUrl).toBe("pi-cc-router");
     expect(config.apiKey).toBe("unused");
-    expect(config.api).toBe("pi-claude-cli");
+    expect(config.api).toBe("pi-cc-router");
     expect(config.models).toBeDefined();
     expect(Array.isArray(config.models)).toBe(true);
     expect(config.streamSimple).toBeDefined();

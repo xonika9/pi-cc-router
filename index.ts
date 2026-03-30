@@ -1,5 +1,5 @@
 /**
- * Pi extension entry point for pi-claude-cli.
+ * Pi extension entry point for pi-cc-router.
  *
  * Registers a custom provider that routes LLM calls through the Claude Code CLI
  * subprocess using stream-json NDJSON protocol.
@@ -18,7 +18,7 @@ import { getCustomToolDefs, writeMcpConfig } from "./src/mcp-config.js";
 // Kill all active Claude subprocesses on process exit to prevent orphans
 process.on("exit", killAllProcesses);
 
-const PROVIDER_ID = "pi-claude-cli";
+const PROVIDER_ID = "pi-cc-router";
 
 let mcpConfigPath: string | undefined;
 let mcpConfigResolved = false;
@@ -53,12 +53,12 @@ function ensureMcpConfig(pi: ExtensionAPI): string | undefined {
     if (toolDefs.length > 0) {
       mcpConfigPath = writeMcpConfig(toolDefs);
       console.error(
-        `[pi-claude-cli] MCP config generated with ${toolDefs.length} custom tool(s)`,
+        `[pi-cc-router] MCP config generated with ${toolDefs.length} custom tool(s)`,
       );
     }
   } catch (err) {
     console.warn(
-      "[pi-claude-cli] MCP config generation failed, custom tools unavailable:",
+      "[pi-cc-router] MCP config generation failed, custom tools unavailable:",
       err,
     );
   }
@@ -91,9 +91,9 @@ export default function (pi: ExtensionAPI) {
     });
 
     pi.registerProvider(PROVIDER_ID, {
-      baseUrl: "pi-claude-cli",
+      baseUrl: "pi-cc-router",
       apiKey: "unused",
-      api: "pi-claude-cli",
+      api: "pi-cc-router",
       models,
       streamSimple: (model, context, options) => {
         const configPath = ensureMcpConfig(pi);
@@ -104,6 +104,6 @@ export default function (pi: ExtensionAPI) {
       },
     });
   } catch (err) {
-    console.error(`[pi-claude-cli] Failed to register provider:`, err);
+    console.error(`[pi-cc-router] Failed to register provider:`, err);
   }
 }

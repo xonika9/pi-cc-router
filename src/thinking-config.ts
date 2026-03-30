@@ -72,7 +72,7 @@ export function mapThinkingEffort(
 
   if (thinkingBudgets && Object.keys(thinkingBudgets).length > 0) {
     console.warn(
-      "[pi-claude-cli] Custom thinkingBudgets are not supported with CLI subprocess. " +
+      "[pi-cc-router] Custom thinkingBudgets are not supported with CLI subprocess. " +
         "The CLI uses --effort levels instead of token budgets. Budgets will be ignored.",
     );
   }

@@ -1,4 +1,4 @@
-# pi-claude-cli
+# pi-cc-router
 
 A [pi](https://github.com/mariozechner/pi-coding-agent) extension that routes LLM calls through the [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) as a subprocess. Use your Claude Pro/Max subscription as the LLM backend — no API key, no separate billing.
 
@@ -10,19 +10,19 @@ The extension registers as a custom pi provider exposing all Claude models. Each
 
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated (`claude` on PATH)
 - A Claude Pro or Max subscription
-- [pi](https://github.com/mariozechner/pi-coding-agent) or [GSD](https://github.com/gsd-build/gsd-2)
+- [pi](https://github.com/mariozechner/pi-coding-agent)
 
 ## Installation
 
-Add to `~/.gsd/agent/settings.json`:
+Add to `~/.pi/agent/settings.json`:
 
 ```json
 {
-  "packages": ["npm:pi-claude-cli"]
+  "packages": ["npm:pi-cc-router"]
 }
 ```
 
-Then select a Claude model via `/model` in the interactive UI. All Claude models appear under the `pi-claude-cli` provider.
+Then select a Claude model via `/model` in the interactive UI. All Claude models appear under the `pi-cc-router` provider.
 
 ## Features
 
@@ -30,7 +30,6 @@ Then select a Claude model via `/model` in the interactive UI. All Claude models
 - Maps tool names and arguments bidirectionally between Claude and pi
 - Exposes custom pi tools to Claude via MCP (schema-only, no execution)
 - Break-early pattern prevents Claude CLI from auto-executing tools
-- Session resume via `--resume` eliminates history replay on follow-up turns
 - Configurable thinking effort with elevated budgets for Opus models
 - Cross-platform subprocess management (Windows, macOS, Linux)
 - Inactivity timeout and process registry for cleanup

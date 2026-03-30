@@ -224,7 +224,7 @@ export function buildPrompt(context: {
     // customToolPrompt calls userContentToText which may increment placeholderImageCount
     if (placeholderImageCount > 0) {
       console.warn(
-        `[pi-claude-cli] ${placeholderImageCount} image(s) in conversation history could not be included in the prompt`,
+        `[pi-cc-router] ${placeholderImageCount} image(s) in conversation history could not be included in the prompt`,
       );
     }
     return customToolPrompt;
@@ -297,7 +297,7 @@ export function buildPrompt(context: {
 
     if (placeholderImageCount > 0) {
       console.warn(
-        `[pi-claude-cli] ${placeholderImageCount} image(s) in conversation history could not be included in the prompt`,
+        `[pi-cc-router] ${placeholderImageCount} image(s) in conversation history could not be included in the prompt`,
       );
     }
 
@@ -330,7 +330,7 @@ export function buildPrompt(context: {
 
   if (placeholderImageCount > 0) {
     console.warn(
-      `[pi-claude-cli] ${placeholderImageCount} image(s) in conversation history could not be included in the prompt`,
+      `[pi-cc-router] ${placeholderImageCount} image(s) in conversation history could not be included in the prompt`,
     );
   }
 
