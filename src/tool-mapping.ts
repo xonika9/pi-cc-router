@@ -38,12 +38,37 @@ export const CUSTOM_TOOLS_MCP_PREFIX = "mcp__custom-tools__";
 /** Set of built-in pi tool names derived from TOOL_MAPPINGS for O(1) lookup. */
 const BUILT_IN_PI_NAMES = new Set(TOOL_MAPPINGS.map((m) => m.pi));
 
+/** Known internal Claude Code tools that pi cannot execute directly. */
+const CLAUDE_INTERNAL_TOOLS = new Set([
+  "Agent",
+  "ToolSearch",
+  "Task",
+  "TaskOutput",
+  "TodoWrite",
+  "NotebookEdit",
+  "ExitPlanMode",
+  "AskUserQuestion",
+  "Skill",
+  "WebFetch",
+  "WebSearch",
+  "RemoteTrigger",
+  "SendMessage",
+]);
+
 /**
  * Check if a pi tool name is a custom tool (not one of the 6 built-in tools).
  * Used by prompt builder to decide whether to add MCP prefix in history replay.
  */
 export function isCustomToolName(piName: string): boolean {
   return !BUILT_IN_PI_NAMES.has(piName);
+}
+
+/**
+ * Check if a Claude tool name is an internal Claude Code tool.
+ * These tools are not executable by pi and should be denied on control requests.
+ */
+export function isClaudeInternalTool(toolName: string): boolean {
+  return CLAUDE_INTERNAL_TOOLS.has(toolName);
 }
 
 /**

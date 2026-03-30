@@ -9,7 +9,10 @@
  */
 
 import type { ClaudeControlRequest } from "./types";
-import { CUSTOM_TOOLS_MCP_PREFIX } from "./tool-mapping.js";
+import {
+  CUSTOM_TOOLS_MCP_PREFIX,
+  isClaudeInternalTool,
+} from "./tool-mapping.js";
 
 export const TOOL_EXECUTION_DENIED_MESSAGE =
   "Tool execution is unavailable in this environment.";
@@ -51,18 +54,19 @@ export function handleControlRequest(
 
   const toolName = msg.request?.tool_name ?? "";
   const isCustomTool = toolName.startsWith(CUSTOM_TOOLS_MCP_PREFIX);
+  const shouldDeny = isCustomTool || isClaudeInternalTool(toolName);
 
   const response: ControlResponse = {
     type: "control_response",
     request_id: msg.request_id,
     response: {
       subtype: "success",
-      response: isCustomTool
+      response: shouldDeny
         ? { behavior: "deny", message: TOOL_EXECUTION_DENIED_MESSAGE }
         : { behavior: "allow" },
     },
   };
 
   stdin.write(JSON.stringify(response) + "\n");
-  return !isCustomTool;
+  return !shouldDeny;
 }

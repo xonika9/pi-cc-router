@@ -93,17 +93,6 @@ describe("control-handler", () => {
       expect(response.response.response.behavior).toBe("allow");
     });
 
-    it("allows internal tools like ToolSearch", () => {
-      const { stream, chunks } = createMockStdin();
-      const msg = makeControlRequest("ToolSearch");
-
-      const result = handleControlRequest(msg, stream);
-
-      expect(result).toBe(true);
-      const response = JSON.parse(chunks[0].trim());
-      expect(response.response.response.behavior).toBe("allow");
-    });
-
     it("allows unknown tools", () => {
       const { stream, chunks } = createMockStdin();
       const msg = makeControlRequest("SomeUnknownTool");
@@ -113,6 +102,50 @@ describe("control-handler", () => {
       expect(result).toBe(true);
       const response = JSON.parse(chunks[0].trim());
       expect(response.response.response.behavior).toBe("allow");
+    });
+  });
+
+  describe("denies Claude internal tools", () => {
+    it("denies ToolSearch", () => {
+      const { stream, chunks } = createMockStdin();
+      const msg = makeControlRequest("ToolSearch");
+
+      const result = handleControlRequest(msg, stream);
+
+      expect(result).toBe(false);
+      const response = JSON.parse(chunks[0].trim());
+      expect(response.response.response.behavior).toBe("deny");
+      expect(response.response.response.message).toBe(
+        TOOL_EXECUTION_DENIED_MESSAGE,
+      );
+    });
+
+    it("denies Agent", () => {
+      const { stream, chunks } = createMockStdin();
+      const msg = makeControlRequest("Agent");
+
+      const result = handleControlRequest(msg, stream);
+
+      expect(result).toBe(false);
+      const response = JSON.parse(chunks[0].trim());
+      expect(response.response.response.behavior).toBe("deny");
+      expect(response.response.response.message).toBe(
+        TOOL_EXECUTION_DENIED_MESSAGE,
+      );
+    });
+
+    it("denies Task", () => {
+      const { stream, chunks } = createMockStdin();
+      const msg = makeControlRequest("Task");
+
+      const result = handleControlRequest(msg, stream);
+
+      expect(result).toBe(false);
+      const response = JSON.parse(chunks[0].trim());
+      expect(response.response.response.behavior).toBe("deny");
+      expect(response.response.response.message).toBe(
+        TOOL_EXECUTION_DENIED_MESSAGE,
+      );
     });
   });
 
