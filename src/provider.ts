@@ -15,6 +15,9 @@
  */
 
 import { createInterface } from "node:readline";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { homedir } from "node:os";
 import {
   AssistantMessageEventStream,
   type Model,
@@ -41,6 +44,19 @@ import { mapThinkingEffort } from "./thinking-config.js";
 import { isPiKnownClaudeTool } from "./tool-mapping.js";
 /** Inactivity timeout: kill subprocess if no stdout for 180 seconds (3 minutes). */
 const INACTIVITY_TIMEOUT_MS = 180_000;
+
+function cliSessionExists(sessionId: string, cwd: string): boolean {
+  const encodedCwd = cwd.replace(/\//g, "-");
+  const sessionFile = join(
+    homedir(),
+    ".claude",
+    "projects",
+    encodedCwd,
+    `${sessionId}.jsonl`,
+  );
+
+  return existsSync(sessionFile);
+}
 
 /** Extended stream options: pi's SimpleStreamOptions plus optional cwd and mcpConfigPath */
 type StreamViaCLiOptions = SimpleStreamOptions & {
@@ -88,13 +104,16 @@ export function streamViaCli(
         options?.sessionId && context.messages.length > 1
           ? options.sessionId
           : undefined;
+      const canResume = resumeSessionId
+        ? cliSessionExists(resumeSessionId, cwd)
+        : false;
 
       // Build prompt: if resuming, only send the latest user turn;
       // otherwise build the full flattened conversation history
-      const prompt = resumeSessionId
+      const prompt = canResume
         ? buildResumePrompt(context)
         : buildPrompt(context);
-      const systemPrompt = resumeSessionId
+      const systemPrompt = canResume
         ? undefined
         : buildSystemPrompt(context, cwd);
 
@@ -111,8 +130,8 @@ export function streamViaCli(
         signal: options?.signal,
         effort,
         mcpConfigPath: options?.mcpConfigPath,
-        resumeSessionId,
-        newSessionId: !resumeSessionId ? options?.sessionId : undefined,
+        resumeSessionId: canResume ? resumeSessionId : undefined,
+        newSessionId: !canResume ? options?.sessionId : undefined,
       });
       const getStderr = captureStderr(proc);
 
@@ -273,8 +292,21 @@ export function streamViaCli(
         } else if (msg.type === "control_request") {
           handleControlRequest(msg, proc!.stdin!);
         } else if (msg.type === "result") {
-          if (msg.subtype === "error") {
-            endStreamWithError(msg.error ?? "Unknown error from Claude CLI");
+          const isError = msg.is_error === true;
+          const isKnownError =
+            msg.subtype === "error" || msg.subtype === "error_during_execution";
+          const isUnknownSubtype = msg.subtype !== "success" && !isKnownError;
+
+          if (isUnknownSubtype) {
+            console.warn(
+              `[pi-cc-router] Unknown result subtype: "${msg.subtype}", treating as error`,
+            );
+          }
+
+          if (isError || isKnownError || isUnknownSubtype) {
+            const errorMsg =
+              msg.errors?.[0] ?? msg.error ?? "Unknown error from Claude CLI";
+            endStreamWithError(errorMsg);
           }
           // For both success and error: clean up the subprocess
           clearTimeout(inactivityTimer);

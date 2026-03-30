@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir, homedir } from "node:os";
+import { join } from "node:path";
 
 // Mock cross-spawn with PassThrough streams for readline compatibility
 vi.mock("cross-spawn", () => ({
@@ -71,6 +74,37 @@ vi.mock("@mariozechner/pi-ai", () => ({
 
 import spawn from "cross-spawn";
 import { streamViaCli } from "../src/provider";
+
+function createCliSessionFixture(sessionId: string) {
+  const cwd = mkdtempSync(join(tmpdir(), "pi-cc-router-session-"));
+  const sessionDir = join(
+    homedir(),
+    ".claude",
+    "projects",
+    cwd.replace(/\//g, "-"),
+  );
+
+  mkdirSync(sessionDir, { recursive: true });
+  writeFileSync(join(sessionDir, `${sessionId}.jsonl`), '{"type":"session"}\n');
+
+  return {
+    cwd,
+    cleanup() {
+      rmSync(cwd, { recursive: true, force: true });
+      rmSync(sessionDir, { recursive: true, force: true });
+    },
+  };
+}
+
+function createTempCwd() {
+  const cwd = mkdtempSync(join(tmpdir(), "pi-cc-router-no-session-"));
+  return {
+    cwd,
+    cleanup() {
+      rmSync(cwd, { recursive: true, force: true });
+    },
+  };
+}
 
 describe("provider registration (default export)", () => {
   it("registers provider with ID pi-cc-router", async () => {
@@ -287,6 +321,64 @@ describe("streamViaCli", () => {
     expect(doneEvent).toBeDefined();
     expect(doneEvent.message.content).toBeDefined();
     expect(mockStream.end).toHaveBeenCalled();
+  });
+
+  it("treats error_during_execution results as errors", async () => {
+    const model = mockModels[0] as any;
+    const context = {
+      messages: [{ role: "user", content: "Hello" }],
+    };
+
+    streamViaCli(model, context);
+    await vi.advanceTimersByTimeAsync(0);
+
+    const proc = (spawn as any).mock.results[0].value;
+
+    proc.stdout.write(
+      JSON.stringify({
+        type: "result",
+        subtype: "error_during_execution",
+        errors: ["No conversation found"],
+      }) + "\n",
+    );
+    proc.stdout.end();
+    await vi.advanceTimersByTimeAsync(100);
+
+    const mockStream = MockAssistantMessageEventStream.mock.instances[0];
+    const doneEvent = mockStream._events.find((e: any) => e.type === "done");
+    expect(doneEvent).toBeDefined();
+    expect(doneEvent.message.content[0].text).toContain(
+      "No conversation found",
+    );
+  });
+
+  it("warns on unknown result subtype and treats it as an error", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const model = mockModels[0] as any;
+    const context = {
+      messages: [{ role: "user", content: "Hello" }],
+    };
+
+    streamViaCli(model, context);
+    await vi.advanceTimersByTimeAsync(0);
+
+    const proc = (spawn as any).mock.results[0].value;
+
+    proc.stdout.write(
+      JSON.stringify({
+        type: "result",
+        subtype: "cancelled",
+      }) + "\n",
+    );
+    proc.stdout.end();
+    await vi.advanceTimersByTimeAsync(100);
+
+    const mockStream = MockAssistantMessageEventStream.mock.instances[0];
+    const doneEvent = mockStream._events.find((e: any) => e.type === "done");
+    expect(doneEvent).toBeDefined();
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[pi-cc-router] Unknown result subtype: "cancelled", treating as error',
+    );
   });
 
   it("calls cleanupProcess after receiving result", async () => {
@@ -1827,6 +1919,7 @@ describe("streamViaCli", () => {
 
   describe("session resume via options.sessionId", () => {
     it("passes --resume when sessionId option is provided on subsequent turn", async () => {
+      const fixture = createCliSessionFixture("sess-abc-123");
       const model = mockModels[0] as any;
       const context = {
         messages: [
@@ -1836,7 +1929,10 @@ describe("streamViaCli", () => {
         ],
       };
 
-      streamViaCli(model, context, { sessionId: "sess-abc-123" } as any);
+      streamViaCli(model, context, {
+        sessionId: "sess-abc-123",
+        cwd: fixture.cwd,
+      } as any);
       await vi.advanceTimersByTimeAsync(0);
 
       const args = (spawn as any).mock.calls[0][1] as string[];
@@ -1848,6 +1944,7 @@ describe("streamViaCli", () => {
       const proc = (spawn as any).mock.results[0].value;
       proc.stdout.end();
       await vi.advanceTimersByTimeAsync(100);
+      fixture.cleanup();
     });
 
     it("passes --session-id on first turn when sessionId provided", async () => {
@@ -1891,6 +1988,7 @@ describe("streamViaCli", () => {
     });
 
     it("uses buildResumePrompt when sessionId is provided (sends only new content)", async () => {
+      const fixture = createCliSessionFixture("sess-resume");
       const model = mockModels[0] as any;
       const context = {
         messages: [
@@ -1900,7 +1998,10 @@ describe("streamViaCli", () => {
         ],
       };
 
-      streamViaCli(model, context, { sessionId: "sess-resume" } as any);
+      streamViaCli(model, context, {
+        sessionId: "sess-resume",
+        cwd: fixture.cwd,
+      } as any);
       await vi.advanceTimersByTimeAsync(0);
 
       const proc = (spawn as any).mock.results[0].value;
@@ -1912,9 +2013,11 @@ describe("streamViaCli", () => {
       // Clean up
       proc.stdout.end();
       await vi.advanceTimersByTimeAsync(100);
+      fixture.cleanup();
     });
 
     it("does not pass system prompt when resuming", async () => {
+      const fixture = createCliSessionFixture("sess-resume");
       const model = mockModels[0] as any;
       const context = {
         messages: [
@@ -1925,7 +2028,10 @@ describe("streamViaCli", () => {
         systemPrompt: "Be helpful",
       };
 
-      streamViaCli(model, context, { sessionId: "sess-resume" } as any);
+      streamViaCli(model, context, {
+        sessionId: "sess-resume",
+        cwd: fixture.cwd,
+      } as any);
       await vi.advanceTimersByTimeAsync(0);
 
       const args = (spawn as any).mock.calls[0][1] as string[];
@@ -1936,6 +2042,39 @@ describe("streamViaCli", () => {
       const proc = (spawn as any).mock.results[0].value;
       proc.stdout.end();
       await vi.advanceTimersByTimeAsync(100);
+      fixture.cleanup();
+    });
+
+    it("falls back to full prompt when the CLI session file is missing", async () => {
+      const fixture = createTempCwd();
+      const model = mockModels[0] as any;
+      const context = {
+        messages: [
+          { role: "user", content: "first message" },
+          { role: "assistant", content: "response" },
+          { role: "user", content: "follow-up" },
+        ],
+      };
+
+      streamViaCli(model, context, {
+        sessionId: "sess-missing",
+        cwd: fixture.cwd,
+      } as any);
+      await vi.advanceTimersByTimeAsync(0);
+
+      const args = (spawn as any).mock.calls[0][1] as string[];
+      expect(args).not.toContain("--resume");
+      expect(args).toContain("--session-id");
+
+      const proc = (spawn as any).mock.results[0].value;
+      const written = proc.stdin.write.mock.calls[0][0] as string;
+      const parsed = JSON.parse(written.trim());
+      expect(parsed.message.content).toContain("USER:\nfirst message");
+      expect(parsed.message.content).toContain("ASSISTANT:\nresponse");
+
+      proc.stdout.end();
+      await vi.advanceTimersByTimeAsync(100);
+      fixture.cleanup();
     });
   });
 });
